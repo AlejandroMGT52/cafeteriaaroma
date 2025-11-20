@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // ⬅️ ¡NUEVO! Importar Firestore
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -8,14 +10,50 @@ class ProfilePage extends StatelessWidget {
   final Color accentColor = const Color(0xFFD2B48C); // Beige/Ocre
   final Color darkTextColor = const Color(0xFF5C4033); // Marrón Oscuro
 
-  // Datos simulados del usuario
-  final String userName = 'Andrea G.';
-  final String userEmail = 'andrea.g@ejemplo.com';
-  final String profileImageUrl = 'https://placehold.co/100x100/FAF0E6/5C4033?text=AG';
-  final int loyaltyPoints = 350;
+  // Función de cerrar sesión (mantenemos la lógica de Auth)
+  Future<void> _logout(BuildContext context) async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      
+      // Mostrar mensaje de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sesión cerrada. ¡Vuelve pronto!'),
+          backgroundColor: Colors.green,
+          duration: Duration(milliseconds: 1500),
+        ),
+      );
+      
+      // Navegar a la pantalla de login (reemplazando todas las rutas anteriores)
+      if (context.mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil('login', (route) => false);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cerrar sesión: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Obtener el usuario actual de Firebase Auth
+    final User? user = FirebaseAuth.instance.currentUser;
+    
+    // Si no hay usuario logueado, redirigir al login
+    if (user == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Redirección segura si el usuario no está autenticado
+        Navigator.of(context).pushNamedAndRemoveUntil('login', (route) => false);
+      });
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -35,227 +73,212 @@ class ProfilePage extends StatelessWidget {
             icon: Icon(Icons.settings, color: darkTextColor),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Abriendo Configuración...')),
-              );
+                  const SnackBar(content: Text('Configuración (simulado)')),
+                );
             },
-          )
+          ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              // --- Sección 1: Cabecera del Usuario ---
-              _buildUserProfileHeader(),
-              const SizedBox(height: 24),
+      
+      // Utilizamos StreamBuilder para obtener los datos de Firestore en tiempo real
+      body: StreamBuilder<DocumentSnapshot>(
+        // El stream apunta al documento del usuario en la colección 'users'
+        stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+        builder: (context, snapshot) {
+          // Estado de carga
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF8B4513)));
+          }
 
-              // --- Sección 2: Puntos de Fidelidad (Recompensas) ---
-              _buildLoyaltyCard(context),
-              const SizedBox(height: 30),
+          // Manejo de errores
+          if (snapshot.hasError) {
+            return Center(child: Text('Error al cargar el perfil: ${snapshot.error}'));
+          }
 
-              // --- Sección 3: Opciones de Navegación Rápida ---
-              _buildOptionTile(
-                context, 
-                icon: Icons.receipt_long, 
-                title: 'Historial de Pedidos', 
-                route: 'orders',
-              ),
-              _buildOptionTile(
-                context, 
-                icon: Icons.favorite_border, 
-                title: 'Mis Favoritos',
-              ),
-              _buildOptionTile(
-                context, 
-                icon: Icons.wallet_outlined, 
-                title: 'Métodos de Pago',
-              ),
-              _buildOptionTile(
-                context, 
-                icon: Icons.location_on_outlined, 
-                title: 'Direcciones Guardadas',
-              ),
-              
-              const SizedBox(height: 30),
+          // Si no hay datos (p.ej., el documento fue borrado)
+          if (!snapshot.hasData || !snapshot.data!.exists || snapshot.data!.data() == null) {
+            return const Center(child: Text('Error: No se encontraron datos de perfil en la base de datos.'));
+          }
 
-              // --- Botón de Cerrar Sesión ---
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Cerrando Sesión...')),
-                    );
-                    Navigator.pushReplacementNamed(context, 'login'); // Redirigir al login
-                  },
-                  icon: const Icon(Icons.logout, size: 24),
-                  label: const Text('Cerrar Sesión'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red[700],
-                    side: BorderSide(color: Colors.red[300]!, width: 1.5),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          // ⬅️ EXTRACCIÓN DE DATOS REALES DE FIRESTORE 
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          
+          final String userName = data['name'] ?? user.displayName ?? 'Usuario de Cafetería';
+          final String userEmail = data['email'] ?? user.email ?? 'No disponible';
+          // Se asegura de que loyaltyPoints sea un entero
+          final int loyaltyPoints = (data['loyaltyPoints'] is num) ? data['loyaltyPoints'].toInt() : 0; 
+
+          // Lógica para la imagen (placeholder con inicial del nombre)
+          final String profileImageUrl = 'https://placehold.co/100x100/FAF0E6/5C4033?text=${userName.isNotEmpty ? userName.substring(0, 1) : '?'}';
+          // -------------------------------------------------------------
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                // Sección de Datos del Usuario (ahora con datos REALES)
+                _buildProfileHeader(userName, userEmail, profileImageUrl),
+                const SizedBox(height: 30),
+                
+                // Sección de Puntos de Lealtad (ahora con datos REALES)
+                _buildLoyaltyCard(loyaltyPoints),
+                const SizedBox(height: 30),
+                
+                // Opciones del Perfil
+                _buildProfileOption(
+                  context, 
+                  icon: Icons.receipt_long_outlined, 
+                  title: 'Historial de Pedidos', 
+                  onTap: () => Navigator.pushReplacementNamed(context, 'orders'),
+                ),
+                _buildProfileOption(
+                  context, 
+                  icon: Icons.location_on_outlined, 
+                  title: 'Direcciones de Entrega', 
+                  onTap: () => _showSimulatedAction(context, 'Direcciones'),
+                ),
+                _buildProfileOption(
+                  context, 
+                  icon: Icons.credit_card_outlined, 
+                  title: 'Métodos de Pago', 
+                  onTap: () => _showSimulatedAction(context, 'Pagos'),
+                ),
+                _buildProfileOption(
+                  context, 
+                  icon: Icons.help_outline, 
+                  title: 'Ayuda y Soporte', 
+                  onTap: () => _showSimulatedAction(context, 'Ayuda'),
+                ),
+                const SizedBox(height: 40),
+                
+                // Botón de Cerrar Sesión REAL
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _logout(context), 
+                    icon: const Icon(Icons.logout, color: Colors.red),
+                    label: const Text('Cerrar Sesión'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red, width: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
+              ],
+            ),
+          );
+        },
       ),
-      bottomNavigationBar: _buildBottomNavBar(context),
+      bottomNavigationBar: _buildBottomNavBar(context, 4),
     );
   }
 
-  // --- Widgets de Componentes ---
+  // --- Funciones de construcción de widgets (Mantenidas) ---
 
-  Widget _buildUserProfileHeader() {
-    return Column(
+  Widget _buildProfileHeader(String name, String email, String imageUrl) {
+    return Row(
       children: [
-        // Avatar del Usuario
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: accentColor, width: 3),
-            image: DecorationImage(
-              image: NetworkImage(profileImageUrl),
-              fit: BoxFit.cover,
+        CircleAvatar(
+          radius: 40,
+          backgroundColor: accentColor,
+          backgroundImage: NetworkImage(imageUrl),
+          child: Text(
+            name.substring(0, 1),
+            style: TextStyle(fontSize: 30, color: darkTextColor, fontWeight: FontWeight.bold),
+          ),
+        ),
+        const SizedBox(width: 20),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: darkTextColor,
+              ),
             ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        // Nombre del Usuario
-        Text(
-          userName,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: darkTextColor,
-          ),
-        ),
-        const SizedBox(height: 4),
-        // Correo del Usuario
-        Text(
-          userEmail,
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[600],
-          ),
+            const SizedBox(height: 4),
+            Text(
+              email,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildLoyaltyCard(BuildContext context) {
+  Widget _buildLoyaltyCard(int points) {
     return Container(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: primaryColor, // Fondo Marrón Tostado
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: primaryColor.withOpacity(0.3),
-            spreadRadius: 2,
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        color: primaryColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: primaryColor.withOpacity(0.2)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              const Text(
-                'Tus Puntos Aroma',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '$loyaltyPoints Puntos',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '¡A solo ${500 - loyaltyPoints} para un café gratis!',
-                style: TextStyle(
-                  color: accentColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+              Icon(Icons.star, color: primaryColor, size: 30),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Puntos de Lealtad',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                  ),
+                  Text(
+                    '$points Puntos',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: darkTextColor,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          // Icono de Puntos
-          const Icon(
-            Icons.star,
-            color: Colors.white,
-            size: 50,
-          ),
+          const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
         ],
       ),
     );
   }
 
-  Widget _buildOptionTile(BuildContext context, {required IconData icon, required String title, String? route}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: InkWell(
-        onTap: () {
-          if (route != null) {
-            Navigator.pushNamed(context, route);
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Abriendo ${title}...')),
-            );
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: primaryColor),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(fontSize: 18, color: darkTextColor),
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
-            ],
-          ),
-        ),
+  Widget _buildProfileOption(BuildContext context, {required IconData icon, required String title, required VoidCallback onTap}) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      leading: Icon(icon, color: primaryColor, size: 28),
+      title: Text(
+        title,
+        style: TextStyle(fontSize: 16, color: darkTextColor),
       ),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+      onTap: onTap,
+    );
+  }
+  
+  void _showSimulatedAction(BuildContext context, String action) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$action (Simulado)'), duration: const Duration(seconds: 1)),
     );
   }
 
-  // Replicando el BottomNavBar de HomePage para mantener la coherencia
-  Widget _buildBottomNavBar(BuildContext context) {
-    const int currentIndex = 4; // 'profile' es el índice 4
-    
+  Widget _buildBottomNavBar(BuildContext context, int currentIndex) {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: primaryColor, 
+      selectedItemColor: primaryColor,
       unselectedItemColor: Colors.grey[400],
       showUnselectedLabels: false,
       onTap: (index) {

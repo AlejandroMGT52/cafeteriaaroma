@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "35973393254",
+    "project_id": "cafeteria-app-unibe",
+    "storage_bucket": "cafeteria-app-unibe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:35973393254:android:d0f173631db5e6d24036a7",
+        "android_client_info": {
+          "package_name": "com.example.medical_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOTCkNY-tKxUW17QEBXcN9_qH9Xn0aD_o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

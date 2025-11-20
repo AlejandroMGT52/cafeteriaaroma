@@ -36,6 +36,11 @@ dependencies:
   provider: ^6.1.1
   
 
+  # Paquetes de Firebase (¡Necesarios para OrderService!)
+  firebase_core: ^2.27.1 # O la versión más reciente
+  firebase_auth: ^4.17.9 # O la versión más reciente
+  cloud_firestore: ^4.15.9 # O la versión más reciente
+
 dev_dependencies:
   flutter_lints: ^2.0.0
   flutter_test:

@@ -1,7 +1,15 @@
+// lib/src/pages/checkout_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:medical_app/src/data/cart_manager.dart';
 import 'order_tracking_page.dart';
+
+// --- Imports de Firebase y Servicios ---
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Para Timestamp
+import '../data/services/order_service.dart';
+import '../data/models/order_model.dart';
+// ----------------------------------------
 
 class CheckoutPage extends StatefulWidget {
   final List<CartItem> cartItems;
@@ -25,6 +33,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
   String selectedPaymentMethod = 'Tarjeta';
   String deliveryAddress = 'Calle Principal 123, Quito';
   bool isProcessing = false;
+
+  // --- Instancias de Servicios ---
+  final OrderService _orderService = OrderService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // ------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +160,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             IconButton(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Cambiar dirección')),
+                  const SnackBar(content: Text('Cambiar dirección (simulado)')),
                 );
               },
               icon: const Icon(Icons.edit_outlined),
@@ -213,7 +226,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _buildOrderSummary() {
-    final subtotal = widget.total - 2.50;
+    // Calculamos el subtotal asumiendo que el envío es fijo de $2.50
+    final subtotal = widget.total - 2.50; 
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -262,24 +276,88 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
+  // --- Lógica REAL de Procesamiento de Pedido con Firebase ---
   Future<void> _processPayment() async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      _showErrorDialog('Usuario no autenticado', 'Por favor, inicia sesión para completar tu pedido.');
+      return;
+    }
+
     setState(() {
       isProcessing = true;
     });
 
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // 1. Mapear CartItems a OrderItems
+      final List<OrderItem> orderItems = widget.cartItems.map((cartItem) {
+        // CORRECCIÓN: Asegurarse de que el precio sea de tipo double. 
+        // Asumimos que cartItem.price es una cadena que contiene el valor numérico.
+        final double itemPrice = double.tryParse(cartItem.price.toString().replaceAll('\$', '').trim()) ?? 0.0;
+        
+        return OrderItem(
+          productId: cartItem.id, // Asumiendo que CartItem tiene un ID
+          name: cartItem.name,
+          price: itemPrice, // <-- CORREGIDO: ahora es double
+          quantity: cartItem.quantity,
+          addons: cartItem.addons,
+        );
+      }).toList();
 
-    if (!mounted) return;
+      // 2. Crear el Objeto OrderModel
+      final newOrder = OrderModel(
+        userId: user.uid,
+        totalAmount: widget.total,
+        status: 'Pendiente', // Estado inicial
+        paymentMethod: selectedPaymentMethod,
+        deliveryAddress: deliveryAddress, // Usar la dirección seleccionada
+        orderDate: Timestamp.now(),
+        items: orderItems,
+      );
 
-    final orderId = 'ORD-${DateTime.now().millisecondsSinceEpoch}';
+      // 3. Subir el pedido a Firestore y obtener el ID
+      final orderId = await _orderService.placeOrder(newOrder);
 
-    final cartManager = Provider.of<CartManager>(context, listen: false);
-    cartManager.clearCart();
+      if (!mounted) return;
 
-    setState(() {
-      isProcessing = false;
-    });
+      // 4. Limpiar el carrito y actualizar UI
+      final cartManager = Provider.of<CartManager>(context, listen: false);
+      cartManager.clearCart();
 
+      setState(() {
+        isProcessing = false;
+      });
+
+      // 5. Mostrar diálogo de éxito y navegación
+      _showSuccessDialog(orderId);
+      
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        isProcessing = false;
+      });
+      _showErrorDialog('Error al procesar el pedido', 'No se pudo completar la transacción. Intenta de nuevo. Detalles: $e');
+    }
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title, style: const TextStyle(color: Colors.red)),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _showSuccessDialog(String orderId) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -312,7 +390,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'ID: $orderId',
+              'ID: ${orderId.substring(0, 8)}...',
               style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
           ],
@@ -322,8 +400,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
+                // Navegar: 1. Cerrar diálogo, 2. Cerrar Checkout, 3. Abrir Tracking
                 Navigator.of(context).pop();
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(); 
                 Navigator.push(
                   context,
                   MaterialPageRoute(

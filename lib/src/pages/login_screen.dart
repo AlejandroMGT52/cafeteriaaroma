@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Importar Firebase Auth
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -12,6 +13,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  final Color primaryColor = const Color(0xFF8B4513); // Marrón Café Tostado
 
   @override
   void dispose() {
@@ -19,59 +21,94 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
+  
+  // Función de inicio de sesión con Firebase Auth
+  void _submitLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+    
+    // Mostrar indicador de carga
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Iniciando sesión con: ${_emailController.text}...'),
+        backgroundColor: primaryColor,
+        duration: const Duration(seconds: 1),
+      ),
+    );
 
-  void _submitLogin() {
-    if (_formKey.currentState!.validate()) {
-      final email = _emailController.text;
-
-      // Mostrar Snackbar de éxito
+    try {
+      // --- LÓGICA REAL DE FIREBASE AUTH ---
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      
+      if (!context.mounted) return;
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Iniciando sesión con: $email. Redirigiendo a "home"...'),
-          backgroundColor: Colors.brown.shade700,
-          duration: const Duration(milliseconds: 1500),
+        const SnackBar(
+          content: Text('Inicio de sesión exitoso. Redirigiendo...'),
+          backgroundColor: Colors.green,
+          duration: Duration(milliseconds: 1000),
         ),
       );
       
-      // --- NAVEGACIÓN A LA RUTA DEFINIDA 'home' (HomePage) ---
-      // Usamos pushReplacementNamed para que el usuario no pueda volver a la 
-      // pantalla de login con el botón de atrás.
+      // Navegación a la pantalla de inicio
       Future.delayed(const Duration(milliseconds: 100), () {
-        // La ruta 'home' debe estar definida en MaterialApp en main.dart
         Navigator.pushReplacementNamed(context, 'home'); 
       });
-      // -----------------------------------------------------------------
+      // ------------------------------------
 
-    } else {
+    } on FirebaseAuthException catch (e) {
+      String message;
+      if (e.code == 'user-not-found') {
+        message = 'No se encontró un usuario para ese correo.';
+      } else if (e.code == 'wrong-password') {
+        message = 'Contraseña incorrecta.';
+      } else {
+        message = 'Error de inicio de sesión: ${e.message}';
+      }
+
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor, corrige los errores del formulario.'),
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ocurrió un error inesperado: $e'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
-  // Puedes reutilizar el resto de tu código para el build
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFf5ebe0), 
+      backgroundColor: const Color(0xFFf5ebe0), // Fondo crema cálido
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 20),
-          child: Form(
-            key: _formKey, 
+          child: Form( // Añadir Form para la validación
+            key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Logo y Título
+                // Logo superior
                 Column(
                   children: [
-                    CircleAvatar(
+                    const CircleAvatar(
                       radius: 55,
-                      child: Icon(Icons.coffee, size: 60, color: Color(0xFFf5ebe0)),
-                      backgroundColor: Color(0xFF6f4e37), 
+                      // Necesitas una imagen en assets/logo.png o un Icono
+                      // backgroundImage: AssetImage("assets/logo.png"), 
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.coffee, size: 50, color: Color(0xFF8B4513)), 
                     ),
                     const SizedBox(height: 20),
                     Text(
@@ -85,83 +122,44 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      "Iniciar Sesión",
+                      "Bienvenido de nuevo",
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
                         color: Colors.brown.shade600,
                       ),
                     ),
+                    const SizedBox(height: 30),
                   ],
                 ),
 
-                const SizedBox(height: 40),
-
-                // Campo de Correo
+                // 1. Campo de Email
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  decoration: _inputDecoration(
+                    labelText: 'Correo Electrónico',
+                    icon: Icons.email_outlined,
+                  ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'El correo es obligatorio.';
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return 'Introduce un correo válido.';
+                    if (value == null || value.isEmpty || !value.contains('@')) {
+                      return 'Ingresa un correo válido.';
                     }
                     return null;
                   },
-                  decoration: InputDecoration(
-                    hintText: "Correo electrónico",
-                    prefixIcon:
-                        const Icon(Icons.email_outlined, color: Colors.brown),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide:
-                          BorderSide(color: Colors.brown.shade300, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide:
-                          BorderSide(color: Colors.brown.shade600, width: 1.5),
-                    ),
-                    errorBorder: OutlineInputBorder( 
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: const BorderSide(color: Colors.red, width: 1.5),
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: const BorderSide(color: Colors.redAccent, width: 2),
-                    ),
-                  ),
                 ),
+                const SizedBox(height: 18),
 
-                const SizedBox(height: 20),
-
-                // Campo de Contraseña
+                // 2. Campo de Contraseña
                 TextFormField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'La contraseña es obligatoria.';
-                    }
-                    if (value.length < 6) {
-                      return 'Debe tener al menos 6 caracteres.';
-                    }
-                    return null;
-                  },
-                  decoration: InputDecoration(
-                    hintText: "Contraseña",
-                    prefixIcon:
-                        const Icon(Icons.lock_outline, color: Colors.brown),
+                  decoration: _inputDecoration(
+                    labelText: 'Contraseña',
+                    icon: Icons.lock_outline,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                        color: Colors.brown,
+                        color: primaryColor,
                       ),
                       onPressed: () {
                         setState(() {
@@ -169,55 +167,35 @@ class _LoginScreenState extends State<LoginScreen> {
                         });
                       },
                     ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide:
-                          BorderSide(color: Colors.brown.shade300, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide:
-                          BorderSide(color: Colors.brown.shade600, width: 1.5),
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: const BorderSide(color: Colors.red, width: 1.5),
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: const BorderSide(color: Colors.redAccent, width: 2),
-                    ),
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, ingresa tu contraseña.';
+                    }
+                    return null;
+                  },
                 ),
-
                 const SizedBox(height: 30),
 
-                // Botón Ingresar
+                // Botón de Login
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.brown.shade700,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 90, vertical: 16),
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    elevation: 6,
-                    shadowColor: Colors.brown.shade300,
                   ),
-                  onPressed: _submitLogin, 
+                  onPressed: _submitLogin, // Llama a la nueva función
                   child: const Text(
-                    "Ingresar",
-                    style: TextStyle(fontSize: 18, color: Colors.white),
+                    "Iniciar Sesión",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
+                const SizedBox(height: 25),
 
-                const SizedBox(height: 18),
-
-                // Botón de Registro
+                // Botón para ir al registro
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.brown.shade600, width: 1.5),
@@ -254,13 +232,32 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   child: const Text(
                     "¿Necesitas ayuda?",
-                    style: TextStyle(color: Colors.brown, fontSize: 15),
+                    style: TextStyle(color: Color(0xFF8B4513), fontSize: 15),
                   ),
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+  
+  InputDecoration _inputDecoration({required String labelText, required IconData icon, Widget? suffixIcon}) {
+    return InputDecoration(
+      labelText: labelText,
+      prefixIcon: Icon(icon, color: primaryColor),
+      suffixIcon: suffixIcon,
+      labelStyle: TextStyle(color: const Color(0xFF5C4033)),
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+        borderSide: BorderSide(color: primaryColor, width: 2),
       ),
     );
   }

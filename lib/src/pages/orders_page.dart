@@ -1,7 +1,15 @@
+// lib/src/pages/orders_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:medical_app/src/data/cart_manager.dart';
 import 'checkout_page.dart';
+
+// --- Imports de Firebase y Servicios ---
+import 'package:firebase_auth/firebase_auth.dart';
+import '../data/services/order_service.dart';
+import '../data/models/order_model.dart';
+import 'order_tracking_page.dart'; // Para la navegación a rastreo
+// ----------------------------------------
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -14,6 +22,11 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
   final Color primaryColor = const Color(0xFF8B4513);
   final Color accentColor = const Color(0xFFD2B48C);
   final Color darkTextColor = const Color(0xFF5C4033);
+
+  // --- Instancias de Servicios ---
+  final OrderService _orderService = OrderService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // ------------------------------
 
   late TabController _tabController;
 
@@ -62,14 +75,14 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
         controller: _tabController,
         children: [
           _buildCartView(context),
-          _buildActiveOrdersView(context),
+          _buildActiveOrdersView(context), // Vista con StreamBuilder implementado
         ],
       ),
       bottomNavigationBar: _buildBottomNavBar(context),
     );
   }
 
-  // Vista del Carrito
+  // Vista del Carrito (sin cambios)
   Widget _buildCartView(BuildContext context) {
     return Consumer<CartManager>(
       builder: (context, cartManager, child) {
@@ -127,7 +140,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
     );
   }
 
-  // Tarjeta de item en el carrito
+  // Tarjeta de item en el carrito (sin cambios)
   Widget _buildCartItemCard(BuildContext context, CartItem item, CartManager cartManager) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -218,7 +231,7 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
     );
   }
 
-  // Resumen del carrito y botón de pago
+  // Resumen del carrito y botón de pago (sin cambios)
   Widget _buildCartSummary(BuildContext context, CartManager cartManager) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -311,29 +324,202 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
     );
   }
 
-  // Vista de pedidos activos (simulada)
+  // --- Vista de pedidos activos (USO DE FIREBASE) ---
   Widget _buildActiveOrdersView(BuildContext context) {
-    // Aquí deberías conectar con tu backend real
-    // Por ahora mostramos un mensaje
-    return Center(
-      child: Column(
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      // Manejo si no hay usuario logueado
+      return Center(
+        child: _buildEmptyState(
+          Icons.lock_outline,
+          'Inicia sesión para ver tus pedidos',
+          'Tus pedidos activos aparecerán aquí.',
+        ),
+      );
+    }
+
+    // StreamBuilder para obtener la lista de pedidos en tiempo real
+    return StreamBuilder<List<OrderModel>>(
+      stream: _orderService.getOrdersStreamForUser(user.uid),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: _buildEmptyState(
+              Icons.error_outline,
+              'Error al cargar pedidos',
+              'Detalles: ${snapshot.error}',
+            ),
+          );
+        }
+
+        final orders = snapshot.data;
+
+        if (orders == null || orders.isEmpty) {
+          return Center(
+            child: _buildEmptyState(
+              Icons.receipt_long_outlined,
+              'No tienes pedidos activos',
+              'Tus pedidos aparecerán aquí una vez finalizado el pago.',
+            ),
+          );
+        }
+
+        // Mostrar la lista de pedidos
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: orders.length,
+          itemBuilder: (context, index) {
+            final order = orders[index];
+            return _buildOrderListCard(context, order);
+          },
+        );
+      },
+    );
+  }
+  
+  // Tarjeta de pedido individual
+  Widget _buildOrderListCard(BuildContext context, OrderModel order) {
+    String formattedDate = 
+      '${order.orderDate.toDate().day}/${order.orderDate.toDate().month} ${order.orderDate.toDate().hour}:${order.orderDate.toDate().minute.toString().padLeft(2, '0')}';
+      
+    // Determinar color de estado
+    Color statusColor;
+    switch (order.status) {
+      case 'Entregado':
+        statusColor = Colors.green;
+        break;
+      case 'Cancelado':
+        statusColor = Colors.red;
+        break;
+      case 'Pendiente':
+      case 'Preparando':
+      case 'En Camino':
+      default:
+        statusColor = primaryColor;
+        break;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () {
+          // Navegar a la página de seguimiento
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OrderTrackingPage(orderId: order.id!),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Pedido #${order.id!.substring(0, 8)}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: darkTextColor,
+                    ),
+                  ),
+                  Text(
+                    order.status,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Total:',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                      Text(
+                        '\$${order.totalAmount.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Fecha:',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                      Text(
+                        formattedDate,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: darkTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Items: ${order.items.map((e) => e.name).join(', ')}',
+                style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  // Widget de estado vacío/error
+  Widget _buildEmptyState(IconData icon, String title, String subtitle) {
+      return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey[300]),
+          Icon(icon, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
-            'No tienes pedidos activos',
+            title,
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey[400]),
           ),
           const SizedBox(height: 8),
           Text(
-            'Tus pedidos aparecerán aquí',
+            subtitle,
+            textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: Colors.grey[400]),
           ),
         ],
-      ),
-    );
+      );
   }
+
 
   Widget _buildBottomNavBar(BuildContext context) {
     const int currentIndex = 2;
@@ -354,11 +540,8 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
             routeName = 'menu';
             break;
           case 2:
-            routeName = 'orders';
-            break;
-          case 3:
-            routeName = 'orders';
-            break;
+          case 3: // Si presiona Pedidos/Carrito, se queda en esta vista
+            return; 
           case 4:
             routeName = 'profile';
             break;
