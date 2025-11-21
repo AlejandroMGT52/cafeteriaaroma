@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Importar Firebase Auth
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -13,7 +13,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
-  final Color primaryColor = const Color(0xFF8B4513); // Marrón Café Tostado
+  bool _isLoading = false; // Para controlar el estado de carga
+  final Color primaryColor = const Color(0xFF8B4513);
 
   @override
   void dispose() {
@@ -21,54 +22,92 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
-  
+
   // Función de inicio de sesión con Firebase Auth
   void _submitLogin() async {
+    // Validar el formulario
     if (!_formKey.currentState!.validate()) return;
-    
+
+    // Evitar múltiples clics
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
     // Mostrar indicador de carga
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Iniciando sesión con: ${_emailController.text}...'),
+        content: Text('Iniciando sesión con: ${_emailController.text.trim()}...'),
         backgroundColor: primaryColor,
         duration: const Duration(seconds: 1),
       ),
     );
 
     try {
-      // --- LÓGICA REAL DE FIREBASE AUTH ---
+      // Iniciar sesión con Firebase Auth
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+
+      if (!mounted) return;
+
+      print("✅ Login exitoso: ${_emailController.text.trim()}");
+
+      // Ocultar snackbar de carga
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       
-      if (!context.mounted) return;
-      
+      // Mostrar mensaje de éxito
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Inicio de sesión exitoso. Redirigiendo...'),
+          content: Text('¡Inicio de sesión exitoso!'),
           backgroundColor: Colors.green,
-          duration: Duration(milliseconds: 1000),
+          duration: Duration(milliseconds: 800),
         ),
       );
-      
-      // Navegación a la pantalla de inicio
-      Future.delayed(const Duration(milliseconds: 100), () {
-        Navigator.pushReplacementNamed(context, 'home'); 
-      });
-      // ------------------------------------
+
+      // Esperar un momento para que el usuario vea el mensaje
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      // *** SOLUCIÓN: Navegar al wrapper y limpiar el stack de navegación ***
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        'wrapper',
+        (route) => false, // Elimina todas las rutas anteriores
+      );
 
     } on FirebaseAuthException catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (!mounted) return;
+
+      // Mapear los errores comunes de Firebase
       String message;
       if (e.code == 'user-not-found') {
-        message = 'No se encontró un usuario para ese correo.';
+        message = 'No se encontró un usuario con ese correo.';
       } else if (e.code == 'wrong-password') {
         message = 'Contraseña incorrecta.';
+      } else if (e.code == 'invalid-email') {
+        message = 'El formato del correo electrónico es inválido.';
+      } else if (e.code == 'user-disabled') {
+        message = 'Esta cuenta ha sido deshabilitada.';
+      } else if (e.code == 'too-many-requests') {
+        message = 'Demasiados intentos. Intenta más tarde.';
+      } else if (e.code == 'network-request-failed') {
+        message = 'Error de conexión. Verifica tu internet.';
+      } else if (e.code == 'invalid-credential') {
+        message = 'Credenciales inválidas. Verifica tu correo y contraseña.';
       } else {
         message = 'Error de inicio de sesión: ${e.message}';
       }
 
-      if (!context.mounted) return;
+      print("❌ FirebaseAuthException: ${e.code} - ${e.message}");
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
@@ -77,38 +116,43 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } catch (e) {
-      if (!context.mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+
+      print("❌ Error Inesperado (Login): $e");
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Ocurrió un error inesperado: $e'),
+        const SnackBar(
+          content: Text('Ocurrió un error inesperado. Intenta más tarde.'),
           backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
         ),
       );
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFf5ebe0), // Fondo crema cálido
+      backgroundColor: const Color(0xFFf5ebe0),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 20),
-          child: Form( // Añadir Form para la validación
+          child: Form(
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Logo superior
+                // Logo superior y Títulos
                 Column(
                   children: [
                     const CircleAvatar(
                       radius: 55,
-                      // Necesitas una imagen en assets/logo.png o un Icono
-                      // backgroundImage: AssetImage("assets/logo.png"), 
                       backgroundColor: Colors.white,
-                      child: Icon(Icons.coffee, size: 50, color: Color(0xFF8B4513)), 
+                      child: Icon(Icons.coffee, size: 50, color: Color(0xFF8B4513)),
                     ),
                     const SizedBox(height: 20),
                     Text(
@@ -136,6 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  enabled: !_isLoading,
                   decoration: _inputDecoration(
                     labelText: 'Correo Electrónico',
                     icon: Icons.email_outlined,
@@ -153,12 +198,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
+                  enabled: !_isLoading,
                   decoration: _inputDecoration(
                     labelText: 'Contraseña',
                     icon: Icons.lock_outline,
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        _isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                         color: primaryColor,
                       ),
                       onPressed: () {
@@ -172,6 +220,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Por favor, ingresa tu contraseña.';
                     }
+                    if (value.length < 6) {
+                      return 'La contraseña debe tener al menos 6 caracteres.';
+                    }
                     return null;
                   },
                 ),
@@ -182,16 +233,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 15),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 80, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  onPressed: _submitLogin, // Llama a la nueva función
-                  child: const Text(
-                    "Iniciar Sesión",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+                  onPressed: _isLoading ? null : _submitLogin,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          "Iniciar Sesión",
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
                 ),
                 const SizedBox(height: 25),
 
@@ -199,16 +261,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.brown.shade600, width: 1.5),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 80, vertical: 15),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 80, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  onPressed: () {
-                    // Navegación a la pantalla de registro
-                    Navigator.pushNamed(context, 'register');
-                  },
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          Navigator.pushNamed(context, 'register');
+                        },
                   child: Text(
                     "Registrarse",
                     style: TextStyle(
@@ -223,13 +286,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Texto de ayuda
                 TextButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content:
-                              Text('Función de ayuda aún no implementada')),
-                    );
-                  },
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text(
+                                    'Función de ayuda aún no implementada')),
+                          );
+                        },
                   child: const Text(
                     "¿Necesitas ayuda?",
                     style: TextStyle(color: Color(0xFF8B4513), fontSize: 15),
@@ -242,13 +307,18 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-  
-  InputDecoration _inputDecoration({required String labelText, required IconData icon, Widget? suffixIcon}) {
+
+  // Función auxiliar para decorar los campos de texto
+  InputDecoration _inputDecoration({
+    required String labelText,
+    required IconData icon,
+    Widget? suffixIcon,
+  }) {
     return InputDecoration(
       labelText: labelText,
       prefixIcon: Icon(icon, color: primaryColor),
       suffixIcon: suffixIcon,
-      labelStyle: TextStyle(color: const Color(0xFF5C4033)),
+      labelStyle: const TextStyle(color: Color(0xFF5C4033)),
       filled: true,
       fillColor: Colors.white,
       border: OutlineInputBorder(

@@ -83,4 +83,5 @@ class DefaultFirebaseOptions {
     authDomain: 'cafeteria-app-unibe.firebaseapp.com',
     storageBucket: 'cafeteria-app-unibe.firebasestorage.app',
   );
+
 }
