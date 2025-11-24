@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:medical_app/src/data/cart_manager.dart';
 import 'dart:async';
 
+// Modelo de Producto
 class Product {
   final String id;
   final String name;
@@ -23,13 +24,15 @@ class Product {
   });
 }
 
+// DATOS: Carrusel (Imágenes actualizadas)
 final List<Product> carouselProducts = [
   Product(
     id: 'promo1',
     name: 'Caramel Macchiato',
     description: 'Espresso con caramelo y leche vaporizada',
     price: '\$4.50',
-    imageUrl: 'https://images.unsplash.com/photo-1578374173705-0c7f6c78c435?w=800&h=500&fit=crop',
+    // CAMBIAR URL AQUI: Puedes poner tu propia URL dentro de las comillas
+    imageUrl: 'https://huupa.coffee/cdn/shop/articles/caramel_macchiato.jpg?v=1742928081',
     badge: '2x1 HOY',
     rating: 4.8,
   ),
@@ -53,13 +56,15 @@ final List<Product> carouselProducts = [
   ),
 ];
 
+// DATOS: Más Vendidos (Imágenes actualizadas y corregidas)
 final List<Product> bestSellers = [
   Product(
     id: '1',
     name: 'Espresso',
     description: 'Intenso y aromático',
     price: '\$2.50',
-    imageUrl: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&h=300&fit=crop',
+    // CAMBIAR URL AQUI
+    imageUrl: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=600&h=400&fit=crop',
     rating: 4.6,
   ),
   Product(
@@ -67,7 +72,7 @@ final List<Product> bestSellers = [
     name: 'Flat White',
     description: 'Microespuma sedosa',
     price: '\$3.80',
-    imageUrl: 'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=400&h=300&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1577968897966-3d4325b36b61?w=600&h=400&fit=crop',
     rating: 4.8,
   ),
   Product(
@@ -75,7 +80,7 @@ final List<Product> bestSellers = [
     name: 'Cold Brew',
     description: 'Extracción en frío',
     price: '\$3.50',
-    imageUrl: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=300&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=600&h=400&fit=crop',
     rating: 4.7,
   ),
   Product(
@@ -83,7 +88,7 @@ final List<Product> bestSellers = [
     name: 'Mocha',
     description: 'Chocolate y espresso',
     price: '\$4.25',
-    imageUrl: 'https://images.unsplash.com/photo-1599750703576-547a5754084e?w=400&h=300&fit=crop',
+    imageUrl: 'https://dfrnt.coffee/cdn/shop/articles/como-preparar-un-cafe-moca-profesional-en-casa-537303.png?v=1733918360',
     rating: 4.9,
   ),
 ];
@@ -105,7 +110,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 0.88);
+    // Ajustamos viewportFraction para que se vea un poco de la siguiente tarjeta
+    _pageController = PageController(viewportFraction: 0.9);
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -145,7 +151,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8F8),
+      backgroundColor: const Color(0xFFFAFAFA), // Fondo un poco más limpio
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -156,7 +162,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   _buildWelcomeSection(),
                   const SizedBox(height: 24),
                   _buildCarousel(),
@@ -165,7 +171,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   const SizedBox(height: 32),
                   _buildSectionHeader('Más Vendidos', Icons.local_fire_department),
                   const SizedBox(height: 16),
-                  _buildBestSellersList(),
+                  _buildBestSellersList(), // Aquí corregimos el overflow
                   const SizedBox(height: 32),
                   _buildPromoSection(),
                   const SizedBox(height: 32),
@@ -204,19 +210,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       floating: true,
       pinned: true,
       backgroundColor: Colors.white,
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
+      elevation: 0.5,
+      surfaceTintColor: Colors.white,
       title: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6F4E37), Color(0xFF8B6F47)],
-              ),
-              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xFF6F4E37),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.coffee, color: Colors.white, size: 26),
+            child: const Icon(Icons.coffee, color: Colors.white, size: 24),
           ),
           const SizedBox(width: 12),
           const Column(
@@ -225,10 +229,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               Text(
                 'Café Aroma',
                 style: TextStyle(
-                  color: Color(0xFF6F4E37),
-                  fontWeight: FontWeight.w900,
-                  fontSize: 22,
-                  letterSpacing: 0.5,
+                  color: Color(0xFF2D2D2D),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
                 ),
               ),
               Text(
@@ -250,44 +253,28 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               alignment: Alignment.center,
               children: [
                 IconButton(
-                  icon: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF8DC),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.shopping_bag_outlined,
-                      color: Color(0xFF6F4E37),
-                      size: 24,
-                    ),
+                  icon: const Icon(
+                    Icons.shopping_bag_outlined,
+                    color: Color(0xFF2D2D2D),
+                    size: 26,
                   ),
                   onPressed: () => Navigator.pushNamed(context, 'orders'),
                 ),
                 if (cartManager.itemCount > 0)
                   Positioned(
-                    right: 6,
-                    top: 6,
+                    right: 8,
+                    top: 8,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Colors.red, Colors.redAccent],
-                        ),
+                      padding: const EdgeInsets.all(5),
+                      decoration: const BoxDecoration(
+                        color: Colors.redAccent,
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.red.withOpacity(0.4),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
                       ),
                       child: Text(
                         '${cartManager.itemCount}',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -297,7 +284,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             );
           },
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
       ],
     );
   }
@@ -305,70 +292,30 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _buildWelcomeSection() {
     final hour = DateTime.now().hour;
     String greeting = '¡Buenos días!';
-    String emoji = '🌅';
-    if (hour >= 12 && hour < 18) {
-      greeting = '¡Buenas tardes!';
-      emoji = '☀️';
-    }
-    if (hour >= 18) {
-      greeting = '¡Buenas noches!';
-      emoji = '🌙';
-    }
+    if (hour >= 12 && hour < 18) greeting = '¡Buenas tardes!';
+    if (hour >= 18) greeting = '¡Buenas noches!';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFF8DC), Color(0xFFFFEFD5)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.orange.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$emoji $greeting',
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF6F4E37),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Tu momento perfecto comienza aquí',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.brown[600],
-                    height: 1.4,
-                  ),
-                ),
-              ],
+          Text(
+            greeting,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.7),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.emoji_emotions,
-              size: 36,
-              color: Color(0xFF6F4E37),
+          const SizedBox(height: 4),
+          const Text(
+            '¿Qué te gustaría\ntomar hoy?',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2D2D2D),
+              height: 1.1,
             ),
           ),
         ],
@@ -380,7 +327,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return Column(
       children: [
         SizedBox(
-          height: 240,
+          height: 250, // Altura del carrusel
           child: PageView.builder(
             controller: _pageController,
             onPageChanged: (index) {
@@ -394,11 +341,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   double value = 1.0;
                   if (_pageController.position.haveDimensions) {
                     value = _pageController.page! - index;
-                    value = (1 - (value.abs() * 0.15)).clamp(0.85, 1.0);
+                    value = (1 - (value.abs() * 0.1)).clamp(0.9, 1.0);
                   }
                   return Center(
                     child: SizedBox(
-                      height: Curves.easeInOut.transform(value) * 240,
+                      height: Curves.easeOut.transform(value) * 250,
+                      width: MediaQuery.of(context).size.width * 0.9, // Responsivo al ancho
                       child: child,
                     ),
                   );
@@ -408,24 +356,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             },
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
             carouselProducts.length,
             (index) => AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              margin: const EdgeInsets.symmetric(horizontal: 5),
-              width: _currentPage == index ? 32 : 10,
-              height: 10,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: _currentPage == index ? 24 : 8,
+              height: 8,
               decoration: BoxDecoration(
-                gradient: _currentPage == index
-                    ? const LinearGradient(
-                        colors: [Color(0xFF6F4E37), Color(0xFF8B6F47)],
-                      )
-                    : null,
-                color: _currentPage != index ? Colors.grey[300] : null,
-                borderRadius: BorderRadius.circular(5),
+                color: _currentPage == index
+                    ? const Color(0xFF6F4E37)
+                    : Colors.grey[300],
+                borderRadius: BorderRadius.circular(4),
               ),
             ),
           ),
@@ -436,19 +381,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Widget _buildCarouselCard(Product product) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 5),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 25,
-            offset: const Offset(0, 12),
+            color: const Color(0xFF6F4E37).withOpacity(0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -457,137 +402,94 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 return Container(
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.coffee, size: 80, color: Colors.grey),
+                  color: Colors.grey[200],
+                  child: const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
                 );
               },
             ),
+            // Gradiente oscuro para que el texto resalte
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.1),
-                    Colors.black.withOpacity(0.85),
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.7),
                   ],
-                  stops: const [0.3, 1.0],
                 ),
               ),
             ),
             if (product.badge != null)
               Positioned(
-                top: 20,
-                right: 20,
+                top: 16,
+                right: 16,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Colors.red, Colors.redAccent],
-                    ),
-                    borderRadius: BorderRadius.circular(25),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.red.withOpacity(0.4),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     product.badge!,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF6F4E37),
                       fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      letterSpacing: 0.5,
+                      fontSize: 12,
                     ),
                   ),
                 ),
               ),
             Positioned(
-              left: 24,
-              right: 24,
-              bottom: 24,
+              left: 20,
+              right: 20,
+              bottom: 20,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.orange,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.star, color: Colors.white, size: 16),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${product.rating}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
                   Text(
                     product.name,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     product.description,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.95),
-                      fontSize: 15,
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         product.price,
                         style: const TextStyle(
-                          color: Color(0xFFFFD700),
-                          fontSize: 32,
+                          color: Colors.white,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () => Navigator.pushNamed(context, 'menu'),
-                        icon: const Icon(Icons.add_shopping_cart, size: 20),
-                        label: const Text(
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6F4E37),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: const Text(
                           'Ordenar',
                           style: TextStyle(
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
                           ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF6F4E37),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 14,
-                          ),
-                          elevation: 4,
                         ),
                       ),
                     ],
@@ -606,80 +508,54 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          Expanded(
-            child: _buildStatCard(
-              icon: Icons.local_shipping,
-              title: 'Delivery',
-              subtitle: '20-30 min',
-              colors: [const Color(0xFF6F4E37), const Color(0xFF8B6F47)],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildStatCard(
-              icon: Icons.store,
-              title: 'Recoger',
-              subtitle: '5-10 min',
-              colors: [const Color(0xFFFF6B6B), const Color(0xFFFF8E53)],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildStatCard(
-              icon: Icons.discount,
-              title: 'Ofertas',
-              subtitle: 'Ver todo',
-              colors: [const Color(0xFF4ECDC4), const Color(0xFF44A08D)],
-            ),
-          ),
+          Expanded(child: _buildQuickActionItem(Icons.moped, 'Delivery', '25 min')),
+          const SizedBox(width: 25),
+          Expanded(child: _buildQuickActionItem(Icons.storefront, 'Recoger', '10 min')),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required List<Color> colors,
-  }) {
-    return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, 'menu'),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: colors),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: colors[0].withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: Colors.white, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+  Widget _buildQuickActionItem(IconData icon, String title, String time) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: const Color(0xFF6F4E37), size: 28),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFF2D2D2D),
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.9),
-                fontSize: 12,
+              Text(
+                time,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[500],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -688,35 +564,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6F4E37), Color(0xFF8B6F47)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: Colors.white, size: 22),
-          ),
-          const SizedBox(width: 12),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF6F4E37),
+              color: Color(0xFF2D2D2D),
             ),
           ),
-          const Spacer(),
           TextButton(
             onPressed: () => Navigator.pushNamed(context, 'menu'),
             child: const Text(
               'Ver todo',
-              style: TextStyle(
-                color: Color(0xFF6F4E37),
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(color: Color(0xFF6F4E37)),
             ),
           ),
         ],
@@ -725,11 +587,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildBestSellersList() {
+    // CORRECCIÓN: Aumentamos la altura de 280 a 320 para evitar el Overflow
     return SizedBox(
-      height: 280,
+      height: 330, 
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.only(left: 25, right: 15),
         physics: const BouncingScrollPhysics(),
         itemCount: bestSellers.length,
         itemBuilder: (context, index) {
@@ -743,67 +606,61 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, 'menu'),
       child: Container(
-        width: 190,
-        margin: const EdgeInsets.symmetric(horizontal: 8),
+        width: 250, // Un poco más ancho para mejor visualización
+        margin: const EdgeInsets.only(right: 16, bottom: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Imagen del producto
             Stack(
               children: [
                 Hero(
                   tag: 'product_${product.id}',
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                     child: Image.network(
                       product.imageUrl,
-                      height: 160,
+                      height: 170, // Altura de imagen
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 160,
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.coffee, size: 60, color: Colors.grey),
-                        );
-                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 170,
+                        color: Colors.grey[100],
+                        child: const Icon(Icons.coffee, color: Colors.grey),
+                      ),
                     ),
                   ),
                 ),
                 Positioned(
-                  top: 12,
-                  right: 12,
+                  top: 10,
+                  right: 10,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                        ),
-                      ],
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.star, color: Colors.orange, size: 16),
+                        const Icon(Icons.star, color: Colors.amber, size: 14),
                         const SizedBox(width: 4),
                         Text(
                           '${product.rating}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                            fontSize: 12,
                           ),
                         ),
                       ],
@@ -812,9 +669,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 ),
               ],
             ),
-            Expanded(
+            
+            // Información del producto
+            SizedBox(
+              height: 140,
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -822,53 +682,49 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       product.name,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: Color(0xFF6F4E37),
+                        fontSize: 17,
+                        color: Color(0xFF2D2D2D),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       product.description,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         color: Colors.grey[600],
+                        height: 1.2,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const Spacer(),
+                    const Spacer(), // Empuja el precio hacia abajo
+                    
+                    // Fila de Precio y Botón Agregar
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
                           product.price,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 22,
+                            fontSize: 20,
                             color: Color(0xFF6F4E37),
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF6F4E37), Color(0xFF8B6F47)],
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF6F4E37).withOpacity(0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            color: const Color(0xFF6F4E37),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
                             Icons.add,
                             color: Colors.white,
-                            size: 22,
+                            size: 20,
                           ),
                         ),
                       ],
@@ -886,105 +742,83 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget _buildPromoSection() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 180,
+      height: 160,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
+          colors: [Color(0xFF2D2D2D), Color(0xFF4A4A4A)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.orange.withOpacity(0.4),
-            blurRadius: 25,
-            offset: const Offset(0, 12),
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Stack(
+      child: Row(
         children: [
-          Positioned(
-            right: -30,
-            top: -30,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                shape: BoxShape.circle,
+          Expanded(
+            flex: 3,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orangeAccent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'PROMO',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Happy Hour',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    '50% OFF en Lattes',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          Positioned(
-            left: -20,
-            bottom: -40,
+          Expanded(
+            flex: 2,
             child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                shape: BoxShape.circle,
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage(
+                    'https://images.unsplash.com/photo-1541167760496-1628856ab772?w=400&h=400&fit=crop'
+                  ),
+                  fit: BoxFit.cover,
+                ),
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
+                ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(28),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          '⚡ OFERTA ESPECIAL',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Happy Hour',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '30% OFF de 3pm - 5pm',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.local_fire_department,
-                    color: Colors.white,
-                    size: 50,
-                  ),
-                ),
-              ],
             ),
           ),
         ],
@@ -997,54 +831,25 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-          _buildBenefitCard(
-            icon: Icons.stars,
-            title: 'Programa de Lealtad',
-            subtitle: 'Acumula puntos con cada compra',
-            colors: [const Color(0xFFFFD700), const Color(0xFFFFA500)],
-          ),
+          _buildBenefitItem(Icons.card_giftcard, 'Puntos de Lealtad', 'Gana recompensas'),
           const SizedBox(height: 12),
-          _buildBenefitCard(
-            icon: Icons.delivery_dining,
-            title: 'Envío Gratis',
-            subtitle: 'En pedidos mayores a \$15',
-            colors: [const Color(0xFF6F4E37), const Color(0xFF8B6F47)],
-          ),
+          _buildBenefitItem(Icons.local_shipping_outlined, 'Envío Gratis', 'En pedidos +15'),
         ],
       ),
     );
   }
 
-  Widget _buildBenefitCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required List<Color> colors,
-  }) {
+  Widget _buildBenefitItem(IconData icon, String title, String subtitle) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colors[0].withOpacity(0.3), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: colors[0].withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: colors),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: Colors.white, size: 28),
-          ),
+          Icon(icon, color: const Color(0xFF6F4E37), size: 28),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -1053,27 +858,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF6F4E37),
+                    fontSize: 16,
+                    color: Color(0xFF2D2D2D),
                   ),
                 ),
-                const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
+                    fontSize: 13,
+                    color: Colors.grey[500],
                   ),
                 ),
               ],
             ),
           ),
-          Icon(
-            Icons.arrow_forward_ios,
-            color: colors[0],
-            size: 20,
-          ),
+          const Icon(Icons.chevron_right, color: Colors.grey),
         ],
       ),
     );
@@ -1085,64 +885,48 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 15,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
             offset: const Offset(0, -5),
           ),
         ],
       ),
-      child: BottomNavigationBar(
-        currentIndex: 0,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF6F4E37),
-        unselectedItemColor: Colors.grey[400],
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
-        showUnselectedLabels: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        onTap: (index) {
-          String routeName;
-          switch (index) {
-            case 0:
-              return;
-            case 1:
-              routeName = 'menu';
-              break;
-            case 2:
-              routeName = 'orders';
-              break;
-            case 3:
-              routeName = 'profile';
-              break;
-            default:
-              return;
-          }
-          Navigator.pushReplacementNamed(context, routeName);
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined, size: 26),
-            activeIcon: Icon(Icons.home, size: 26),
-            label: 'Inicio',
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(Icons.home, true, 'Inicio'),
+              _buildNavItem(Icons.favorite_border, false, 'Favoritos'),
+              _buildNavItem(Icons.receipt_long, false, 'Pedidos'),
+              _buildNavItem(Icons.person_outline, false, 'Perfil'),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu_outlined, size: 26),
-            activeIcon: Icon(Icons.restaurant_menu, size: 26),
-            label: 'Menú',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag_outlined, size: 26),
-            activeIcon: Icon(Icons.shopping_bag, size: 26),
-            label: 'Pedidos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline, size: 26),
-            activeIcon: Icon(Icons.person, size: 26),
-            label: 'Perfil',
-          ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, bool isActive, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          color: isActive ? const Color(0xFF6F4E37) : Colors.grey[400],
+          size: 26,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: isActive ? const Color(0xFF6F4E37) : Colors.grey[400],
+            fontSize: 10,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
     );
   }
 }
